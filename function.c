@@ -42,14 +42,14 @@ void ftp_rename(int csockfd, char *path1, char *path2)      //handler of rename
 }
 
 
-void ftp_del(int csockfd, char *path)       //handler of remove
+void ftp_rm(int csockfd, char *path)       //handler of remove
 {
     int result;
     char sendline[MAXSIZE],recvline[MAXSIZE];
     memset(sendline, 0, MAXSIZE);
     memset(recvline, 0, MAXSIZE);
 
-    sprintf(sendline, "RMD %s\r\n", path);
+    sprintf(sendline, "RMD %s\r\n", "gh");
 
     result = send(csockfd,sendline,strlen(sendline),0);
     if(result < 0)
@@ -61,24 +61,33 @@ void ftp_del(int csockfd, char *path)       //handler of remove
     result = recv(csockfd,recvline,sizeof(recvline),0);
     if(result < 0 || strncmp(recvline,"250",3)!=0)
     {
-        char *edg = recvline;
-        memset(sendline, 0, MAXSIZE);
-        memset(recvline, 0, MAXSIZE);
+        printf("%s\n", recvline);
+        printf("No this file or directory\n");
+    }
+}
 
-        sprintf(sendline, "DELE %s\r\n", path);
-        
-        result = send(csockfd,sendline,strlen(sendline),0);
-        if(result < 0)
-        {
-            printf("send dele error\n");
-            return;
-        }
 
-        result = recv(csockfd,recvline,sizeof(recvline),0);
-        if(result < 0 || strncmp(recvline,"250",3)!=0)
-        {
-            printf("No this file or directory\n");
-        }
+void ftp_del(int csockfd, char *path)       //handler of remove
+{
+    int result;
+    char sendline[MAXSIZE],recvline[MAXSIZE];
+    memset(sendline, 0, MAXSIZE);
+    memset(recvline, 0, MAXSIZE);
+
+    sprintf(sendline, "DELE %s\r\n", path);
+
+    result = send(csockfd,sendline,strlen(sendline),0);
+    if(result < 0)
+    {
+        printf("send rmd error\n");
+        return;
+    }
+
+    result = recv(csockfd,recvline,sizeof(recvline),0);
+    // printf("%s\n", recvline);
+    if(result < 0 || strncmp(recvline,"250",3)!=0)
+    {
+        printf("No this file or directory\n");
     }
 }
 

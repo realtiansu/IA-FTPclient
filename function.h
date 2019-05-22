@@ -26,6 +26,7 @@ void ftp_changdir(int csockfd, char *path);
 void ftp_mkdir(int csockfd, char *path);
 void ftp_quit(int csockfd);
 void ftp_del(int csockfd, char *path);
+void ftp_rm(int csockfd, char *path);
 void ftp_rename(int csockfd, char *path1, char *path2);
 void ftp_up(int csockfd, char *path1, char *path2, bool type, bool mode, int speed);
 void ftp_up_pasv(int csockfd, int dsockfd, char *path1, char *path2, int speed);

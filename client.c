@@ -291,11 +291,20 @@ void cmd(int csockfd)
                 printf("Invalid useage\n");
             }
         }
-        else if(strncmp(cmd,"rm",2)==0)     //rm, delete, 文件和文件夹都能删
+        else if(strncmp(cmd,"del",3)==0)     //delete, 删文件
         {
             str = strtok( NULL, delims );
             if(str != NULL) {
                 ftp_del(csockfd, str);
+            } else {
+                printf("Invalid useage\n");
+            }
+        }
+        else if(strncmp(cmd,"rm",2)==0)     //remove 删文件夹
+        {
+            str = strtok( NULL, delims );
+            if(str != NULL) {
+                ftp_rm(csockfd, str);
             } else {
                 printf("Invalid useage\n");
             }
