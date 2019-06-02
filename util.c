@@ -6,7 +6,7 @@ void help()
     printf("Usage: ftp [-46pinegvtd] [hostname]");
 }
 
-void trim(char *strIn, char *strOut)
+void trim(char *strIn, char *strOut)    //去掉首尾空格
 {
     if(strIn == NULL) {
         return;
@@ -28,7 +28,7 @@ void trim(char *strIn, char *strOut)
 }
 
 
-char *itoa(int value, char *string, int radix)
+char *itoa(int value, char *string, int radix)      //int转ascii
 {
     char tmp[33];
     char *tp = tmp;
@@ -64,7 +64,7 @@ char *itoa(int value, char *string, int radix)
     return string;
 }
 
-bool replace(char strRes[],char from[], char to[]) {
+bool replace(char strRes[],char from[], char to[]) {        //替换
     int i;
     bool flag = false;
     char *p,*q,*ts;
@@ -88,7 +88,7 @@ bool replace(char strRes[],char from[], char to[]) {
 }
 
 
-int file_size(char* filename)  
+int file_size(char* filename)       //计算文件大小
 {  
     FILE *fp=fopen(filename,"r");  
     if(!fp) return -1;  
