@@ -6,18 +6,6 @@ void help()
     printf("Usage: ftp [-46pinegvtd] [hostname]");
 }
 
-
-void zeromery(char *a,int len)
-{
-    int i;
-    len=sizeof(a);
-    for(i=0;i<len;i++)
-    {
-        a[i]=0;
-    }
-}
-
-
 void trim(char *strIn, char *strOut)
 {
     if(strIn == NULL) {

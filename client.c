@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdbool.h>
-#include <curses.h>
+#include <termios.h>
 #include "function.h"
 #include "util.h"
 
@@ -64,6 +64,10 @@ bool login(int csockfd)
 {
     int result;
     char sendline[MAXSIZE],recvline[MAXSIZE];
+	struct termios old, new; 
+	tcgetattr(0, &old);  // 获取终端属性
+	new = old;
+
     result = recv(csockfd,recvline,sizeof(recvline),0);
     if(result==-1)
     {
@@ -97,10 +101,11 @@ bool login(int csockfd)
             memset(recvline, 0, MAXSIZE);
             printf("password: ");                                       
             
-            initscr();
-            scanf("%s",password);       //依赖 libncurses5-dev
-            endwin();
-            
+            new.c_lflag &= ~(ECHO | ICANON);	// 不使用标准的输出，不显示字符。
+            tcsetattr(0, TCSANOW, &new);     // 设置终端新的属性
+            scanf("%s",password);
+            tcsetattr(0, TCSANOW, &old);     // 恢复终端的属性
+	
             getchar();
             sprintf(sendline, "PASS %s\r\n", password);
             // printf("--->%s\n",sendline);
@@ -136,9 +141,9 @@ bool login(int csockfd)
 
 void cmd(int csockfd)
 {
-    char cmd[MAXSIZE],origCmd[MAXSIZE];
+    char handledcmd[MAXSIZE],origCmd[MAXSIZE];
     char delims[] = " ";
-    char *str = NULL;
+    char *cmd = NULL;
     bool type = false, mode = false;
     int speed = 2000;
     
@@ -148,45 +153,47 @@ void cmd(int csockfd)
     while (true)
     {
         printf("ftp-> ");
-        memset(cmd, 0, MAXSIZE);            //memset清空这个变量的内存
+        memset(handledcmd, 0, MAXSIZE);            //memset清空这个变量的内存
         memset(origCmd, 0, MAXSIZE);
 
         fgets(origCmd, 1024, stdin);
         origCmd[strcspn(origCmd, "\n")] = 0;
-        trim(origCmd, cmd);
-        printf("\n the input cmmond is <%s>\n\n", cmd);
+        trim(origCmd, handledcmd);
+        printf("\n the input cmmond is <%s>\n\n", handledcmd);
 
-        str = strtok(cmd, delims);      //把cmd 以空格为界拆成子串
-        if(str == NULL) {
+        cmd = strtok(handledcmd, delims);      //把cmd 以空格为界拆成子串
+        if(cmd == NULL) {
             continue;
         }
+        // strcpy(cmd, str);
+        // printf("%s,%d\n", cmd, strlen(cmd));
 
-        if(strncmp(cmd,"ls",2)==0)      //ls
+        if(strncmp(cmd,"ls",2)==0 && strlen(cmd) == 2)      //ls
         {
-            // printf("%s\n", str);
-            str = strtok( NULL, delims );
-            ftp_list(csockfd, str, type, mode);
+            
+            cmd = strtok( NULL, delims );
+            ftp_list(csockfd, cmd, type, mode);
         }
-        else if(strncmp(cmd,"pwd",3)==0)        //pwd
+        else if(strncmp(cmd,"pwd",3)==0 && strlen(cmd) == 3)        //pwd
         {
             ftp_pwd(csockfd);
         }
-        else if(strncmp(cmd,"rename",6)==0)        //rename
+        else if(strncmp(cmd,"rename",6)==0 && strlen(cmd) == 6)        //rename
         {
             char path1[MAXSIZE], path2[MAXSIZE];
             memset(path1, 0, MAXSIZE);
             memset(path2, 0, MAXSIZE);
 
-            str = strtok( NULL, delims );
-            if(str != NULL) {
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
                 // printf("%s\n", str);
-                strncpy(path1,str,MAXSIZE);
+                strncpy(path1,cmd,MAXSIZE);
             }
 
-            str = strtok( NULL, delims );
-            if(str != NULL) {
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
                 // printf("%s\n", str);
-                strncpy(path2,str,MAXSIZE);
+                strncpy(path2,cmd,MAXSIZE);
             }
             
             if(strlen(path1)>0 && strlen(path2)>0 ) {
@@ -196,22 +203,22 @@ void cmd(int csockfd)
                 printf("Invalid useage\n");
             }
         }
-        else if(strncmp(cmd,"put",3) == 0)        //put
+        else if(strncmp(cmd,"put",3) == 0 && strlen(cmd) == 3)        //put
         {
             char path1[MAXSIZE], path2[MAXSIZE];
             memset(path1, 0, MAXSIZE);
             memset(path2, 0, MAXSIZE);
 
-            str = strtok( NULL, delims );
-            if(str != NULL) {
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
                 // printf("%s\n", str);
-                strncpy(path1,str,MAXSIZE);
+                strncpy(path1,cmd,MAXSIZE);
             }
 
-            str = strtok( NULL, delims );
-            if(str != NULL) {
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
                 // printf("%s\n", str);
-                strncpy(path2,str,MAXSIZE);
+                strncpy(path2,cmd,MAXSIZE);
             }
             
             if(strlen(path1)>0 && strlen(path2)>0 ) {
@@ -221,22 +228,22 @@ void cmd(int csockfd)
                 printf("Invalid useage\n");
             }
         }
-        else if(strncmp(cmd,"get",3) == 0)        //get
+        else if(strncmp(cmd,"get",3) == 0 && strlen(cmd) == 3)        //get
         {
             char path1[MAXSIZE], path2[MAXSIZE];
             memset(path1, 0, MAXSIZE);
             memset(path2, 0, MAXSIZE);
 
-            str = strtok( NULL, delims );
-            if(str != NULL) {
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
                 // printf("%s\n", str);
-                strncpy(path1,str,MAXSIZE);
+                strncpy(path1,cmd,MAXSIZE);
             }
 
-            str = strtok( NULL, delims );
-            if(str != NULL) {
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
                 // printf("%s\n", str);
-                strncpy(path2,str,MAXSIZE);
+                strncpy(path2,cmd,MAXSIZE);
             }
             
             if(strlen(path1)>0 && strlen(path2)>0 ) {
@@ -247,22 +254,22 @@ void cmd(int csockfd)
             }
 
         }
-        else if(strncmp(cmd,"rest",4) == 0)        //rest
+        else if(strncmp(cmd,"rest",4) == 0 && strlen(cmd) == 4)        //rest
         {
             char path1[MAXSIZE], path2[MAXSIZE];
             memset(path1, 0, MAXSIZE);
             memset(path2, 0, MAXSIZE);
 
-            str = strtok( NULL, delims );
-            if(str != NULL) {
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
                 // printf("%s\n", str);
-                strncpy(path1,str,MAXSIZE);
+                strncpy(path1,cmd,MAXSIZE);
             }
 
-            str = strtok( NULL, delims );
-            if(str != NULL) {
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
                 // printf("%s\n", str);
-                strncpy(path2,str,MAXSIZE);
+                strncpy(path2,cmd,MAXSIZE);
             }
             
             if(strlen(path1)>0 && strlen(path2)>0 ) {
@@ -273,43 +280,43 @@ void cmd(int csockfd)
             }
 
         }
-        else if(strncmp(cmd,"cd",2)==0)     //cd
+        else if(strncmp(cmd,"cd",2)==0 && strlen(cmd) == 2)     //cd
         {
-            str = strtok( NULL, delims );
-            if(str != NULL) {
-                ftp_changdir(csockfd, str);
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
+                ftp_changdir(csockfd, cmd);
             } else {
                 printf("Invalid useage\n");
             }
         }
-        else if(strncmp(cmd,"mkdir",5)==0)      //mkdir
+        else if(strncmp(cmd,"mkdir",5)==0 && strlen(cmd) == 5)      //mkdir
         {
-            str = strtok( NULL, delims );
-            if(str != NULL) {
-                ftp_mkdir(csockfd, str);
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
+                ftp_mkdir(csockfd, cmd);
             } else {
                 printf("Invalid useage\n");
             }
         }
-        else if(strncmp(cmd,"del",3)==0)     //delete, 删文件
+        else if(strncmp(cmd,"del",3)==0 && strlen(cmd) == 3)     //delete, 删文件
         {
-            str = strtok( NULL, delims );
-            if(str != NULL) {
-                ftp_del(csockfd, str);
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
+                ftp_del(csockfd, cmd);
             } else {
                 printf("Invalid useage\n");
             }
         }
-        else if(strncmp(cmd,"rm",2)==0)     //remove 删文件夹
+        else if(strncmp(cmd,"rm",2)==0 && strlen(cmd) == 2)     //remove 删文件夹
         {
-            str = strtok( NULL, delims );
-            if(str != NULL) {
-                ftp_rm(csockfd, str);
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
+                ftp_rm(csockfd, cmd);
             } else {
                 printf("Invalid useage\n");
             }
         }
-        else if(strncmp(cmd,"binary",6)==0)     //to binary
+        else if(strncmp(cmd,"binary",6)==0 && strlen(cmd) == 6)     //to binary
         {
             if(type == true){
                 bool r = setType(csockfd, false);
@@ -318,7 +325,7 @@ void cmd(int csockfd)
             }
             
         }
-        else if(strncmp(cmd,"ascii",5)==0)      //to ascii
+        else if(strncmp(cmd,"ascii",5)==0 && strlen(cmd) == 5)      //to ascii
         {
             if(type == false){
                 bool r = setType(csockfd, true);
@@ -326,24 +333,24 @@ void cmd(int csockfd)
                 printf("Already ascii\n");
             }
         }
-        else if(strncmp(cmd,"pasv",4)==0)     //to passive mode
+        else if(strncmp(cmd,"pasv",4)==0 && strlen(cmd) == 4)     //to passive mode
         {
             mode = false;
         }
-        else if(strncmp(cmd,"port",4)==0)     //to port mode
+        else if(strncmp(cmd,"port",4)==0 && strlen(cmd) == 4)     //to port mode
         {
             mode = true;
         }
-        else if(strncmp(cmd,"speed",5)==0)     //set speed
+        else if(strncmp(cmd,"speed",5)==0 && strlen(cmd) == 5)     //set speed
         {
-            str = strtok( NULL, delims );
-            if(str != NULL) {
-                speed = atoi(str);
+            cmd = strtok( NULL, delims );
+            if(cmd != NULL) {
+                speed = atoi(cmd);
             } else {
                 printf("Invalid useage\n");
             }
         }
-        else if(strncmp(cmd,"quit",4)==0)       //quit
+        else if(strncmp(cmd,"quit",4)==0 && strlen(cmd) == 4)       //quit
         {
             ftp_quit(csockfd);
         }
