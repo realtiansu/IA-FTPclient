@@ -299,6 +299,7 @@ int swToPasv(int csockfd)               //switch to passive mode
     //初始化服务器数据连接时的端口信息
     int data_serviceport;
     data_serviceport=j*256+i;
+    printf("%d,%d,%d\n", i,j,data_serviceport);
     dsockfd=socket(AF_INET,SOCK_STREAM,0);
 
     servaddr.sin_family=AF_INET;
