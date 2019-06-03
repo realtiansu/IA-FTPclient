@@ -268,6 +268,7 @@ int swToPasv(int csockfd)               //switch to passive mode
     }
 
     result = recv(csockfd,recvline,sizeof(recvline),0);
+    printf(",, %s\n", recvline);
     if(result < 0 || strncmp(recvline,"227",3)!=0)
     {
         printf("receive pasv error, %s\n", recvline);
@@ -341,9 +342,9 @@ int swToPort(int csockfd, int localport)                //switch to active mode
     
     bool r = replace(ip,".",",");
 
-    i=localport/256;
-    j=localport%256;
-    sprintf(sendline, "PORT %s,%d,%d\r\n", ip, i, j);
+    j=localport/256;
+    i=localport%256;
+    sprintf(sendline, "PORT %s,%d,%d\r\n", ip, j, i);
     printf("sendline is %s\n", sendline);
     result = send(csockfd,sendline,strlen(sendline),0);
     if(result < 0)
