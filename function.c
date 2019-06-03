@@ -254,8 +254,9 @@ void ftp_pwd(int csockfd)           //handler of pwd
 int swToPasv(int csockfd)               //switch to passive mode 
 {
     int i,j,result,dsockfd;
+    int ip1,ip2,ip3,ip4;
     struct sockaddr_in servaddr;
-    char sendline[MAXSIZE],recvline[MAXSIZE];
+    char sendline[MAXSIZE],recvline[MAXSIZE], ip[MAXSIZE];
     bzero(&servaddr,sizeof(servaddr));
     memset(sendline, 0, MAXSIZE);
     memset(recvline, 0, MAXSIZE);
@@ -296,14 +297,44 @@ int swToPasv(int csockfd)               //switch to passive mode
     strncpy(num,ptr2+1,ptr1-ptr2-1);
     j=atoi(num);
 
-    //初始化服务器数据连接时的端口信息
+    memset(num, 0, MAXSIZE);
+    ptr1=ptr2;
+    ptr2--;
+    while(*(ptr2)!=',') { ptr2--; }
+    strncpy(num,ptr2+1,ptr1-ptr2-1);
+    ip4=atoi(num);
+
+    memset(num, 0, MAXSIZE);
+    ptr1=ptr2;
+    ptr2--;
+    while(*(ptr2)!=',') { ptr2--; }
+    strncpy(num,ptr2+1,ptr1-ptr2-1);
+    ip3=atoi(num);
+
+    memset(num, 0, MAXSIZE);
+    ptr1=ptr2;
+    ptr2--;
+    while(*(ptr2)!=',') { ptr2--; }
+    strncpy(num,ptr2+1,ptr1-ptr2-1);
+    ip2=atoi(num);
+
+    memset(num, 0, MAXSIZE);
+    ptr1=ptr2;
+    ptr2--;
+    while(*(ptr2)!='(') { ptr2--; }
+    strncpy(num,ptr2+1,ptr1-ptr2-1);
+    ip1=atoi(num);
+
+    printf("%d.%d.%d.%d\n", ip1, ip2, ip3, ip4);
+    sprintf(ip, "%d.%d.%d.%d", ip1, ip2, ip3, ip4);       //得到ip
+
     int data_serviceport;
-    data_serviceport=j*256+i;
-    printf("%d,%d,%d\n", i,j,data_serviceport);
+    data_serviceport=j*256+i;           //得到端口
+    
     dsockfd=socket(AF_INET,SOCK_STREAM,0);
 
     servaddr.sin_family=AF_INET;
-    servaddr.sin_addr.s_addr=INADDR_ANY;
+    servaddr.sin_addr.s_addr=inet_addr(ip);
     servaddr.sin_port=htons(data_serviceport);
     
     if(connect(dsockfd,(struct sockaddr*)&servaddr,sizeof(struct sockaddr))==-1)
