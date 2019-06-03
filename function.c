@@ -469,7 +469,7 @@ void ftp_list_pasv(int csockfd, int dsockfd, char *path)            //handler of
     else
     {
         result = recv(dsockfd,data,sizeof(data),0);
-        printf("recv %d\n", );
+        // printf("recv %d\n", strlen(data));
         if(result < 0) {
             printf("receive list error\n");
             goto pasvEnd;
