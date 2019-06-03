@@ -108,6 +108,7 @@ bool login(int csockfd)
 	
             getchar();
             sprintf(sendline, "PASS %s\r\n", password);
+            printf("\n");
             // printf("--->%s\n",sendline);
 
             result = send(csockfd,sendline,strlen(sendline),0);
@@ -318,8 +319,10 @@ void cmd(int csockfd)
         }
         else if(strncmp(cmd,"binary",6)==0 && strlen(cmd) == 6)     //to binary
         {
+            // printf("%d\n", type);
             if(type == true){
                 bool r = setType(csockfd, false);
+                type = !type;
             } else {
                 printf("Already binary\n");
             }
@@ -327,8 +330,10 @@ void cmd(int csockfd)
         }
         else if(strncmp(cmd,"ascii",5)==0 && strlen(cmd) == 5)      //to ascii
         {
+            // printf("%d\n", type);
             if(type == false){
                 bool r = setType(csockfd, true);
+                type = !type;
             } else {
                 printf("Already ascii\n");
             }

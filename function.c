@@ -460,6 +460,7 @@ void ftp_list_pasv(int csockfd, int dsockfd, char *path)            //handler of
     }
 
     result = recv(csockfd,recvline,sizeof(recvline),0);
+    // printf("%s\n", recvline);
     if(result < 0 || strncmp(recvline,"150",3)!=0)
     {
         printf("receive list error, %s\n", recvline);
@@ -468,15 +469,18 @@ void ftp_list_pasv(int csockfd, int dsockfd, char *path)            //handler of
     else
     {
         result = recv(dsockfd,data,sizeof(data),0);
-        if(result < 0)
-        {
+        printf("recv %d\n", );
+        if(result < 0) {
             printf("receive list error\n");
             goto pasvEnd;
         }
-        else
-        {
-            printf("\n");
-            printf("%s\n", data);
+        else {
+            if(strlen(data)>0) {
+                printf("\n");
+                printf("%s\n", data);
+            } else {
+                printf("No such directory\n");
+            }
         }
 
         result = recv(csockfd,recvline,sizeof(recvline),0);
@@ -541,6 +545,7 @@ void ftp_list_port(int csockfd, int dsockfd, int localport, char *path)         
     }
 
     result = recv(csockfd,recvline,sizeof(recvline),0);
+    // printf("%s\n", recvline);
     if(result < 0 || strncmp(recvline,"150",3)!=0)
     {
         printf("receive list error, %s\n", recvline);
