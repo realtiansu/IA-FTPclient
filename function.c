@@ -269,7 +269,7 @@ int swToPasv(int csockfd)               //switch to passive mode
     }
 
     result = recv(csockfd,recvline,sizeof(recvline),0);
-    printf(",, %s\n", recvline);
+    // printf(",, %s\n", recvline);
     if(result < 0 || strncmp(recvline,"227",3)!=0)
     {
         printf("receive pasv error, %s\n", recvline);
