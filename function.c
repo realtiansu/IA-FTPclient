@@ -325,7 +325,7 @@ int swToPasv(int csockfd)               //switch to passive mode
     strncpy(num,ptr2+1,ptr1-ptr2-1);
     ip1=atoi(num);
 
-    printf("%d.%d.%d.%d\n", ip1, ip2, ip3, ip4);
+    // printf("%d.%d.%d.%d\n", ip1, ip2, ip3, ip4);
     sprintf(ip, "%d.%d.%d.%d", ip1, ip2, ip3, ip4);       //得到ip
 
     int data_serviceport;
