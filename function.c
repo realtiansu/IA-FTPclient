@@ -49,7 +49,7 @@ void ftp_rm(int csockfd, char *path)       //handler of remove
     memset(sendline, 0, MAXSIZE);
     memset(recvline, 0, MAXSIZE);
 
-    sprintf(sendline, "RMD %s\r\n", "gh");
+    sprintf(sendline, "RMD %s\r\n", path);
 
     result = send(csockfd,sendline,strlen(sendline),0);
     if(result < 0)
