@@ -27,22 +27,25 @@ void ftp_up(int csockfd, char *path1, char *path2, bool type, bool mode, int spe
 
 
 void ftp_up_pasv(int csockfd, int dsockfd, char *path1, char *path2, int speed) {            //handler of upload in pasv mode
-    int result, size;
-    char sendline[MAXSIZE],recvline[MAXSIZE],data[32767];
+    int result, rc;
+    char sendline[MAXSIZE],recvline[MAXSIZE];
+    unsigned char buf[20];
+
     memset(sendline, 0, MAXSIZE);
     memset(recvline, 0, MAXSIZE);
-    memset(data, 0, 32767);
+    memset(buf, 0, 20);
 
-    FILE *fp;
-    fp = fopen(path1, "r");
-    // printf("%s\n", path1);
+    FILE *fp, *fp2;
+    fp = fopen(path1, "rb");
+
     if(fp == NULL) {
         printf("%s no such file\n", path1);
         goto pasvEnd2;
-    } else {
-        size = fread(data, 1, sizeof(data), fp);
-        fclose(fp);
-    }
+    } 
+    // else {
+    //     size = fread(data, 1, sizeof(data), fp);
+    //     fclose(fp);
+    // }
 
     sprintf(sendline, "STOR %s\r\n", path2);
     result = send(csockfd,sendline,strlen(sendline),0);
@@ -56,15 +59,21 @@ void ftp_up_pasv(int csockfd, int dsockfd, char *path1, char *path2, int speed) 
         printf("receive stor error, %s\n", recvline);
         goto pasvEnd2;
     } else {
-        char drc[1];
-        float com;
-        for(int i=0; i<strlen(data); i++) {
-            drc[0] = data[i];
-            result = send(dsockfd, drc, 1, 0);
-            usleep(1000000/speed);
-            com = 100*(i+1)/strlen(data);
-            printf("%%%.f\n", com);
+        while( (rc = fread(buf,sizeof(unsigned char), 20, fp)) != 0 ) {
+            result = send(dsockfd, buf, 20, 0);
+            if(speed < 2000){
+                usleep(1000000/speed);
+            }
         }
+        // char drc[1];
+        // float com;
+        // for(int i=0; i<strlen(data); i++) {
+        //     drc[0] = data[i];
+        //     result = send(dsockfd, drc, 1, 0);
+        //     
+        //     com = 100*(i+1)/strlen(data);
+        //     printf("%%%.f\n", com);
+        // }
 
         close(dsockfd);
         if(result < 0) {
@@ -81,28 +90,31 @@ void ftp_up_pasv(int csockfd, int dsockfd, char *path1, char *path2, int speed) 
 
     pasvEnd2:
     close(dsockfd);
+    fclose(fp);
     return;
 }
 
 
 void ftp_up_port(int csockfd, int dsockfd, int localport, char *path1, char *path2, int speed) {         //handler of upload in active mode
-    int result, size;
-    char sendline[MAXSIZE],recvline[MAXSIZE],data[32767];
+    int result, rc;
+    char sendline[MAXSIZE],recvline[MAXSIZE];
+    unsigned char buf[20];
     struct sockaddr_in servaddr;
     bzero(&servaddr,sizeof(servaddr));
     memset(sendline, 0, MAXSIZE);
     memset(recvline, 0, MAXSIZE);
-    memset(data, 0, 32767);
+    memset(buf, 0, 20);
 
     FILE *fp;
     fp = fopen(path1, "r");
     if(fp == NULL) {
         printf("%s no such file\n", path1);
         goto portEnd2;
-    } else {
-        size = fread(data, 1, sizeof(data), fp);
-        fclose(fp);
     }
+    //  else {
+    //     size = fread(data, 1, sizeof(data), fp);
+    //     fclose(fp);
+    // }
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htons(INADDR_ANY);
@@ -136,15 +148,11 @@ void ftp_up_port(int csockfd, int dsockfd, int localport, char *path1, char *pat
         printf("receive stor error, %s\n", recvline);
         goto portEnd2;
     } else {
-        // result = send(new_dfd, data, size, 0);
-        char drc[1];
-        float com;
-        for(int i=0; i<strlen(data); i++) {
-            drc[0] = data[i];
-            result = send(new_dfd, drc, 1, 0);
-            usleep(1000000/speed);
-            com = 100*(i+1)/strlen(data);
-            printf("%%%.f\n", com);
+        while( (rc = fread(buf,sizeof(unsigned char), 20, fp)) != 0 ) {
+            result = send(dsockfd, buf, 20, 0);
+            if(speed < 2000){
+                usleep(1000000/speed);
+            }
         }
 
         close(new_dfd);
