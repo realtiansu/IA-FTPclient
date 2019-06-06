@@ -206,7 +206,10 @@ void ftp_down(int csockfd, char *path1, char *path2, bool type, bool mode) {
 
 void ftp_down_pasv(int csockfd, int dsockfd, char *path1, char *path2) {             //handler of download in pasv mode
     int result, size;
-    char sendline[MAXSIZE],recvline[MAXSIZE],data[32767];
+    char sendline[MAXSIZE],recvline[MAXSIZE];
+    unsigned char data[32767];
+    FILE *fp;
+
     memset(sendline, 0, MAXSIZE);
     memset(recvline, 0, MAXSIZE);
     memset(data, 0, 32767);
@@ -223,23 +226,25 @@ void ftp_down_pasv(int csockfd, int dsockfd, char *path1, char *path2) {        
         printf("receive retr error, %s\n", recvline);
         goto pasvEnd;
     } else {
+        
+        fp = fopen(path2, "wb");
+        if(fp == NULL) {
+            printf("%s fail to open\n", path2);
+            goto pasvEnd;
+        }
+rerecv:
         result = recv(dsockfd, data, sizeof(data), 0);
         if(result < 0) {
             printf("receive retr data error\n");
             goto pasvEnd;
         } else {
-            // printf("%s\n", data);
-            FILE *fp;
-            fp = fopen(path2, "w");
-            if(fp == NULL) {
-                printf("%s fail to open\n", path2);
-                goto pasvEnd;
-            } else {
-                // size = fread(data, 1, sizeof(data), fp);
-                fwrite(data,1,result,fp);
-                fclose(fp);
-            }
-
+            printf("%d\n", result);
+            // size = fread(data, 1, sizeof(data), fp);
+            fwrite(data, sizeof(unsigned char), result, fp);
+            
+        }
+        if(result != 0 ){
+            goto rerecv;
         }
 
         result = recv(csockfd,recvline,sizeof(recvline),0);
@@ -253,14 +258,18 @@ void ftp_down_pasv(int csockfd, int dsockfd, char *path1, char *path2) {        
 
     pasvEnd:
     close(dsockfd);
+    fclose(fp);
     return;
 }
 
 
 void ftp_down_port(int csockfd, int dsockfd, int localport, char *path1, char *path2) {              //handler of download in active mode
     int result, size;
-    char sendline[MAXSIZE],recvline[MAXSIZE],data[32767];
+    char sendline[MAXSIZE],recvline[MAXSIZE];
+    unsigned char data[32767];
+    FILE *fp;
     struct sockaddr_in servaddr;
+
     bzero(&servaddr,sizeof(servaddr));
     memset(sendline, 0, MAXSIZE);
     memset(recvline, 0, MAXSIZE);
@@ -298,6 +307,12 @@ void ftp_down_port(int csockfd, int dsockfd, int localport, char *path1, char *p
         // printf("receive stor error, %s\n", recvline);
         goto portEnd;
     } else {
+        fp = fopen(path2, "wb");
+        if(fp == NULL) {
+            printf("%s fail to open\n", path2);
+            goto portEnd;
+        }
+rerecv:
         result = recv(new_dfd, data, sizeof(data), 0);
         // printf("%s,%s\n", recvline, data);
         if(result < 0) {
@@ -305,15 +320,9 @@ void ftp_down_port(int csockfd, int dsockfd, int localport, char *path1, char *p
             goto portEnd;
         } else {
             // printf("%s\n", data);
-            FILE *fp;
-            fp = fopen(path2, "w");
-            if(fp == NULL) {
-                printf("%s fail to open\n", path2);
-                goto portEnd;
-            } else {
-                // size = fread(data, 1, sizeof(data), fp);
-                fwrite(data,1,result,fp);
-                fclose(fp);
+            fwrite(data, sizeof(unsigned char), result, fp);
+            if(result != 0 ){
+                goto rerecv;
             }
 
         }
@@ -325,12 +334,12 @@ void ftp_down_port(int csockfd, int dsockfd, int localport, char *path1, char *p
             goto portEnd;
         }
         
-        
     }
 
     portEnd:
     close(new_dfd);
     close(dsockfd);
+    fclose(fp);
     return;
 }
 
