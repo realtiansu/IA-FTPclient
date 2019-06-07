@@ -6,6 +6,13 @@ void help()
     printf("Usage: ftp [-46pinegvtd] [hostname]");
 }
 
+
+int random(int x) {
+    srand((unsigned)time(NULL));
+    return rand() % x;
+}
+
+
 void trim(char *strIn, char *strOut)    //去掉首尾空格
 {
     if(strIn == NULL) {
@@ -85,6 +92,24 @@ bool replace(char strRes[],char from[], char to[]) {        //替换
         }
     }
     return flag;
+}
+
+
+char *strrpc(char *str,char *oldstr,char *newstr){
+    char bstr[strlen(str)];//转换缓冲区
+    memset(bstr,0,sizeof(bstr));
+ 
+    for(int i = 0;i < strlen(str);i++){
+        if(!strncmp(str+i,oldstr,strlen(oldstr))){//查找目标字符串
+            strcat(bstr,newstr);
+            i += strlen(oldstr) - 1;
+        }else{
+        	strncat(bstr,str + i,1);//保存一字节进缓冲区
+	    }
+    }
+ 
+    strcpy(str,bstr);
+    return str;
 }
 
 

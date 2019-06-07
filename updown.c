@@ -4,7 +4,6 @@
 void ftp_up(int csockfd, char *path1, char *path2, bool type, bool mode, int speed) {
     int dsockfd, localport;
     localport = random(30000) + 1025;
-    // printf("%d,%d\n", type, mode);
     
     if(!mode) {
         dsockfd = swToPasv(csockfd);
@@ -12,7 +11,7 @@ void ftp_up(int csockfd, char *path1, char *path2, bool type, bool mode, int spe
             return;
         }
 
-        ftp_up_pasv(csockfd, dsockfd, path1, path2, speed);
+        ftp_up_pasv(csockfd, dsockfd, path1, path2, speed, type);
     }
     else {
         dsockfd = swToPort(csockfd, localport);
@@ -20,32 +19,31 @@ void ftp_up(int csockfd, char *path1, char *path2, bool type, bool mode, int spe
             return;
         }
 
-        ftp_up_port(csockfd, dsockfd, localport, path1, path2, speed);
+        ftp_up_port(csockfd, dsockfd, localport, path1, path2, speed, type);
     }
 
 }
 
 
-void ftp_up_pasv(int csockfd, int dsockfd, char *path1, char *path2, int speed) {            //handler of upload in pasv mode
+void ftp_up_pasv(int csockfd, int dsockfd, char *path1, char *path2, int speed, bool type) {            //handler of upload in pasv mode
     int result, rc;
     char sendline[MAXSIZE],recvline[MAXSIZE];
-    unsigned char buf[20];
+    unsigned char buf[40], *str;
 
     memset(sendline, 0, MAXSIZE);
     memset(recvline, 0, MAXSIZE);
-    memset(buf, 0, 20);
+    memset(buf, 0, 40);
 
-    FILE *fp, *fp2;
-    fp = fopen(path1, "rb");
-
+    FILE *fp;
+    if(!type){
+        fp = fopen(path1, "rb");
+    } else {
+        fp = fopen(path1, "r");
+    }
     if(fp == NULL) {
         printf("%s no such file\n", path1);
         goto pasvEnd2;
-    } 
-    // else {
-    //     size = fread(data, 1, sizeof(data), fp);
-    //     fclose(fp);
-    // }
+    }
 
     sprintf(sendline, "STOR %s\r\n", path2);
     result = send(csockfd,sendline,strlen(sendline),0);
@@ -60,20 +58,20 @@ void ftp_up_pasv(int csockfd, int dsockfd, char *path1, char *path2, int speed) 
         goto pasvEnd2;
     } else {
         while( (rc = fread(buf,sizeof(unsigned char), 20, fp)) != 0 ) {
-            result = send(dsockfd, buf, 20, 0);
+            if(!type){
+                result = send(dsockfd, buf, rc, 0);
+            } else {
+                str = strrpc(buf, "\n","\r\n");
+                
+                printf("%d,%ld\n", rc, strlen(str));
+                result = send(dsockfd, str, strlen(str), 0);
+            }
+
             if(speed < 2000){
                 usleep(1000000/speed);
             }
+            memset(buf, 0, 40);
         }
-        // char drc[1];
-        // float com;
-        // for(int i=0; i<strlen(data); i++) {
-        //     drc[0] = data[i];
-        //     result = send(dsockfd, drc, 1, 0);
-        //     
-        //     com = 100*(i+1)/strlen(data);
-        //     printf("%%%.f\n", com);
-        // }
 
         close(dsockfd);
         if(result < 0) {
@@ -95,26 +93,26 @@ void ftp_up_pasv(int csockfd, int dsockfd, char *path1, char *path2, int speed) 
 }
 
 
-void ftp_up_port(int csockfd, int dsockfd, int localport, char *path1, char *path2, int speed) {         //handler of upload in active mode
+void ftp_up_port(int csockfd, int dsockfd, int localport, char *path1, char *path2, int speed, bool type) {         //handler of upload in active mode
     int result, rc;
     char sendline[MAXSIZE],recvline[MAXSIZE];
-    unsigned char buf[20];
+    unsigned char buf[40], *str;
     struct sockaddr_in servaddr;
     bzero(&servaddr,sizeof(servaddr));
     memset(sendline, 0, MAXSIZE);
     memset(recvline, 0, MAXSIZE);
-    memset(buf, 0, 20);
+    memset(buf, 0, 40);
 
     FILE *fp;
-    fp = fopen(path1, "r");
+    if(!type){
+        fp = fopen(path1, "rb");
+    } else {
+        fp = fopen(path1, "r");
+    }
     if(fp == NULL) {
         printf("%s no such file\n", path1);
         goto portEnd2;
     }
-    //  else {
-    //     size = fread(data, 1, sizeof(data), fp);
-    //     fclose(fp);
-    // }
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htons(INADDR_ANY);
@@ -144,16 +142,27 @@ void ftp_up_port(int csockfd, int dsockfd, int localport, char *path1, char *pat
     }
 
     result = recv(csockfd,recvline,sizeof(recvline),0);
+    printf("%s\n", recvline);
     if(result < 0 || strncmp(recvline,"150",3)!=0) {
         printf("receive stor error, %s\n", recvline);
         goto portEnd2;
     } else {
         while( (rc = fread(buf,sizeof(unsigned char), 20, fp)) != 0 ) {
-            result = send(dsockfd, buf, 20, 0);
+            if(!type){
+                result = send(new_dfd, buf, rc, 0);
+            } else {
+                str = strrpc(buf, "\n","\r\n");
+                
+                printf("%d,%ld\n", rc, strlen(str));
+                result = send(new_dfd, str, strlen(str), 0);
+            }
+
             if(speed < 2000){
                 usleep(1000000/speed);
             }
+            memset(buf, 0, 40);
         }
+
 
         close(new_dfd);
         if(result < 0) {
@@ -174,6 +183,7 @@ void ftp_up_port(int csockfd, int dsockfd, int localport, char *path1, char *pat
     portEnd2:
     close(new_dfd);
     close(dsockfd);
+    fclose(fp);
     return;
 }
 
@@ -191,7 +201,7 @@ void ftp_down(int csockfd, char *path1, char *path2, bool type, bool mode) {
             return;
         }
 
-        ftp_down_pasv(csockfd, dsockfd, path1, path2);
+        ftp_down_pasv(csockfd, dsockfd, path1, path2, type);
     }
     else {
         dsockfd = swToPort(csockfd, localport);
@@ -199,15 +209,15 @@ void ftp_down(int csockfd, char *path1, char *path2, bool type, bool mode) {
             return;
         }
 
-        ftp_down_port(csockfd, dsockfd, localport, path1, path2);
+        ftp_down_port(csockfd, dsockfd, localport, path1, path2, type);
     }
 }
 
 
-void ftp_down_pasv(int csockfd, int dsockfd, char *path1, char *path2) {             //handler of download in pasv mode
+void ftp_down_pasv(int csockfd, int dsockfd, char *path1, char *path2, bool type) {             //handler of download in pasv mode
     int result, size;
     char sendline[MAXSIZE],recvline[MAXSIZE];
-    unsigned char data[32767];
+    unsigned char data[32767], *str;
     FILE *fp;
 
     memset(sendline, 0, MAXSIZE);
@@ -237,13 +247,20 @@ rerecv:
         if(result < 0) {
             printf("receive retr data error\n");
             goto pasvEnd;
-        } else {
-            printf("%d\n", result);
-            // size = fread(data, 1, sizeof(data), fp);
-            fwrite(data, sizeof(unsigned char), result, fp);
-            
-        }
-        if(result != 0 ){
+        } else if(result > 0) {
+            // printf("%d\n", result);
+            if(!type){
+                fwrite(data, sizeof(unsigned char), result, fp);
+            } else {
+                str = strrpc(data, "\r","");
+                printf("%d,%ld\n", result, strlen(str));
+                
+                fwrite(str, sizeof(unsigned char), strlen(str), fp);
+            }
+            // if(speed < 2000){
+            //     usleep(1000000/speed);
+            // }
+            memset(data, 0, 32767);
             goto rerecv;
         }
 
@@ -263,10 +280,10 @@ rerecv:
 }
 
 
-void ftp_down_port(int csockfd, int dsockfd, int localport, char *path1, char *path2) {              //handler of download in active mode
+void ftp_down_port(int csockfd, int dsockfd, int localport, char *path1, char *path2, bool type) {              //handler of download in active mode
     int result, size;
     char sendline[MAXSIZE],recvline[MAXSIZE];
-    unsigned char data[32767];
+    unsigned char data[32767], *str;
     FILE *fp;
     struct sockaddr_in servaddr;
 
@@ -314,17 +331,24 @@ void ftp_down_port(int csockfd, int dsockfd, int localport, char *path1, char *p
         }
 rerecv:
         result = recv(new_dfd, data, sizeof(data), 0);
-        // printf("%s,%s\n", recvline, data);
         if(result < 0) {
             printf("receive retr data error\n");
             goto portEnd;
-        } else {
-            // printf("%s\n", data);
-            fwrite(data, sizeof(unsigned char), result, fp);
-            if(result != 0 ){
-                goto rerecv;
+        } else if(result > 0) {
+            // printf("%d\n", result);
+            if(!type){
+                fwrite(data, sizeof(unsigned char), result, fp);
+            } else {
+                str = strrpc(data, "\r","");
+                printf("%d,%ld\n", result, strlen(str));
+                
+                fwrite(str, sizeof(unsigned char), strlen(str), fp);
             }
-
+            // if(speed < 2000){
+            //     usleep(1000000/speed);
+            // }
+            memset(data, 0, 32767);
+            goto rerecv;
         }
 
         result = recv(csockfd,recvline,sizeof(recvline),0);

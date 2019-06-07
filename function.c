@@ -477,7 +477,8 @@ void ftp_list_pasv(int csockfd, int dsockfd, char *path)            //handler of
         else {
             if(strlen(data)>0) {
                 printf("\n");
-                printf("%s\n", data);
+                write(STDOUT_FILENO, data, sizeof(data));
+                // printf("%s\n", data);
             } else {
                 printf("No such directory\n");
             }
@@ -554,14 +555,13 @@ void ftp_list_port(int csockfd, int dsockfd, int localport, char *path)         
     else
     {
         result = recv(new_dfd, data, 32766, 0);
-        if(result < 0)
-        {
+        if(result < 0) {
             printf("receive list data error\n");
             goto portEnd;
         }
-        else 
-        {
-            printf("\n%s\n", data);
+        else {
+            // printf("\n%s\n", data);
+            write(STDOUT_FILENO, data, sizeof(data));
         }
 
         result = recv(csockfd,recvline,sizeof(recvline),0);

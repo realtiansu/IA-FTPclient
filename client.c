@@ -143,7 +143,7 @@ bool login(int csockfd)
 void cmd(int csockfd)
 {
     char handledcmd[MAXSIZE],origCmd[MAXSIZE];
-    char delims[] = " ";
+    char delims[] = " ", c;
     char *cmd = NULL;
     bool type = false, mode = false;
     int speed = 2000;
@@ -151,8 +151,7 @@ void cmd(int csockfd)
     bool r = setType(csockfd, type);
 
 
-    while (true)
-    {
+    while (true) {
         printf("ftp-> ");
         memset(handledcmd, 0, MAXSIZE);            //memset清空这个变量的内存
         memset(origCmd, 0, MAXSIZE);
@@ -361,8 +360,8 @@ void cmd(int csockfd)
         }
         else
         {
-            if(strlen(cmd)==0)
-            {
+            if(strlen(origCmd)==0) {
+                while ((c = getchar()) != EOF && c != '\n');
                 continue;
             }
             printf("no this command\n");
